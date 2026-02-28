@@ -3,25 +3,27 @@ import confetti from 'canvas-confetti';
 import { useEffect, useState } from 'react';
 import LeaderboardBar from '../components/LeaderboardBar';
 import NeonCard from '../components/NeonCard';
+import PeriodFilter from '../components/PeriodFilter';
 import VulnerabilityCard from '../components/VulnerabilityCard';
 import { useVulnerabilities } from '../hooks/useVulnerabilities';
 import { fadeUp, staggerContainer } from '../utils/animations';
-import { formatRelativeMinutes } from '../utils/formatters';
 
 export default function LeaderboardPage() {
   const {
-    vulnerabilities,
-    leaderboard,
+    filteredVulnerabilities,
+    filteredLeaderboard,
     loading,
     refreshing,
     error,
-    lastUpdated,
     newAwards,
+    selectedPeriod,
+    periodOptions,
+    setSelectedPeriod,
     manualRefresh,
   } = useVulnerabilities();
   const [burstAward, setBurstAward] = useState(null);
 
-  const maxScore = leaderboard[0]?.score || 1;
+  const maxScore = filteredLeaderboard[0]?.score || 1;
 
   useEffect(() => {
     if (!newAwards?.length) return;
@@ -74,18 +76,18 @@ export default function LeaderboardPage() {
           <h2 className="text-3xl md:text-5xl font-black uppercase tracking-[0.18em] text-cyber-pink drop-shadow-[0_0_12px_rgba(255,43,191,0.7)]">
             Live Leaderboard
           </h2>
-          <p className="text-sm text-slate-300 mt-2">
-            Syncs with Notion every 30 minutes. Last update: {formatRelativeMinutes(lastUpdated)}
-          </p>
         </div>
 
-        <button
-          onClick={manualRefresh}
-          disabled={refreshing}
-          className="rounded-md border border-cyber-cyan/50 bg-cyber-charcoal/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-cyber-cyan shadow-neonCyan hover:bg-cyber-charcoal disabled:opacity-50"
-        >
-          {refreshing ? 'Refreshing...' : 'Manual Refresh'}
-        </button>
+        <div className="flex items-center gap-2">
+          <PeriodFilter options={periodOptions} value={selectedPeriod} onChange={setSelectedPeriod} />
+          <button
+            onClick={manualRefresh}
+            disabled={refreshing}
+            className="rounded-md border border-cyber-cyan/50 bg-cyber-charcoal/70 px-4 py-2 text-xs uppercase tracking-[0.2em] text-cyber-cyan shadow-neonCyan hover:bg-cyber-charcoal disabled:opacity-50"
+          >
+            {refreshing ? 'Refreshing...' : 'Manual Refresh'}
+          </button>
+        </div>
       </motion.div>
 
       {error ? (
@@ -103,10 +105,10 @@ export default function LeaderboardPage() {
           <NeonCard className="p-4 md:p-5 h-full min-h-0 flex flex-col" delay={0.05}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm md:text-base uppercase tracking-[0.2em] text-cyber-cyan">Pentester Ranking</h3>
-              <span className="text-xs text-slate-400">{leaderboard.length} Pentesters</span>
+              <span className="text-xs text-slate-400">{filteredLeaderboard.length} Pentesters</span>
             </div>
             <div className="space-y-3 overflow-y-auto pr-1 min-h-0 flex-1">
-              {leaderboard.map((entry) => (
+              {filteredLeaderboard.map((entry) => (
                 <LeaderboardBar
                   key={entry.pentester}
                   pentester={entry.pentester}
@@ -121,12 +123,12 @@ export default function LeaderboardPage() {
           <NeonCard className="p-4 md:p-5 h-full min-h-0 flex flex-col" delay={0.1}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm md:text-base uppercase tracking-[0.2em] text-cyber-pink">Vulnerability Feed</h3>
-              <span className="text-xs text-slate-400">{vulnerabilities.length} Events</span>
+              <span className="text-xs text-slate-400">{filteredVulnerabilities.length} Events</span>
             </div>
 
             <motion.div layout className="space-y-3 overflow-y-auto pr-1 min-h-0 flex-1">
               <AnimatePresence>
-                {vulnerabilities.map((vuln, idx) => (
+                {filteredVulnerabilities.map((vuln, idx) => (
                   <VulnerabilityCard
                     key={vuln.id}
                     vulnerability={vuln}

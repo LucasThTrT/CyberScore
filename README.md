@@ -16,10 +16,11 @@ A React + Vite + TailwindCSS dashboard for pentester rankings and vulnerability 
 - Leaderboard page (`/`)
   - Neon animated ranking bars with dynamic scores
   - Live vulnerability feed cards with severity badges and glow/shake effect for newest entries
-  - Manual refresh button + auto refresh every 30 minutes
+  - Manual refresh button + auto refresh every minute
 - Score evolution page (`/stats`)
   - Multi-line cumulative score chart (one line per pentester)
   - Neon dark chart theme
+  - Shared period filter (`2 semaines`, `1 mois`, `2 mois`, `6 mois`, `1 an`) persisted across pages
 - Reusable components
   - `src/components/LeaderboardBar.jsx`
   - `src/components/VulnerabilityCard.jsx`
@@ -36,12 +37,11 @@ A React + Vite + TailwindCSS dashboard for pentester rankings and vulnerability 
 
 This app expects vulnerabilities in a Notion database and reads these properties:
 
-- `title` / `Title` / `name`
-- `severity` (`low`, `medium`, `high`)
-- `date`
-- `client`
-- `client_logo_url`
-- Optional pentester field: `pentester` (fallbacks supported: `researcher`, `owner`, `assigned_to`)
+- `Name` (title of vulnerability card)
+- `Vulnerability type` (select/options text)
+- `Discovery date` (date)
+- `Severity level` (`Low`, `Medium`, `High`)
+- `Found by` (pentester name / people field)
 
 ## Score Logic
 
@@ -87,7 +87,7 @@ npm run preview
 
 ## Notes
 
-- The refresh interval is 30 minutes and can be adjusted in `src/hooks/useVulnerabilities.jsx`.
+- The refresh interval is 1 minute and can be adjusted in `src/hooks/useVulnerabilities.jsx`.
 - In development, Notion calls go through the Vite proxy (`/api/notion`) to avoid browser CORS errors.
 - For production, use a backend/API route proxy (or serverless function) with the same pattern, otherwise direct browser calls to Notion can fail and expose secrets.
 - Ensure your Notion integration has access to the target database.

@@ -2,8 +2,17 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { fetchVulnerabilities } from '../services/notion';
 import { computeLeaderboard, computeScoreTimeline, SEVERITY_POINTS } from '../utils/scoring';
 
-const REFRESH_INTERVAL = 30 * 60 * 1000;
+const REFRESH_INTERVAL = 60 * 1000;
 const VulnerabilitiesContext = createContext(null);
+const PERIOD_STORAGE_KEY = 'pentester-dashboard-period';
+
+const PERIODS = {
+  '2w': { label: '2 semaines', days: 14 },
+  '1m': { label: '1 mois', days: 30 },
+  '2m': { label: '2 mois', days: 60 },
+  '6m': { label: '6 mois', days: 180 },
+  '1y': { label: '1 an', days: 365 },
+};
 
 export function VulnerabilitiesProvider({ children }) {
   const [vulnerabilities, setVulnerabilities] = useState([]);
@@ -12,6 +21,11 @@ export function VulnerabilitiesProvider({ children }) {
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState(null);
   const [newAwards, setNewAwards] = useState([]);
+  const [selectedPeriod, setSelectedPeriod] = useState(() => {
+    if (typeof window === 'undefined') return '1m';
+    const saved = window.localStorage.getItem(PERIOD_STORAGE_KEY);
+    return saved && PERIODS[saved] ? saved : '1m';
+  });
 
   const refresh = useCallback(async (initial = false) => {
     setError('');
@@ -60,18 +74,48 @@ export function VulnerabilitiesProvider({ children }) {
     return () => clearInterval(id);
   }, [refresh]);
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(PERIOD_STORAGE_KEY, selectedPeriod);
+    }
+  }, [selectedPeriod]);
+
   const leaderboard = useMemo(() => computeLeaderboard(vulnerabilities), [vulnerabilities]);
   const scoreTimeline = useMemo(() => computeScoreTimeline(vulnerabilities), [vulnerabilities]);
+  const filteredVulnerabilities = useMemo(() => {
+    const windowDays = PERIODS[selectedPeriod]?.days ?? 30;
+    const minDate = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+
+    return vulnerabilities.filter((item) => {
+      const itemDate = new Date(item.date);
+      if (Number.isNaN(itemDate.getTime())) return false;
+      return itemDate >= minDate;
+    });
+  }, [vulnerabilities, selectedPeriod]);
+  const filteredLeaderboard = useMemo(
+    () => computeLeaderboard(filteredVulnerabilities),
+    [filteredVulnerabilities]
+  );
+  const filteredScoreTimeline = useMemo(
+    () => computeScoreTimeline(filteredVulnerabilities),
+    [filteredVulnerabilities]
+  );
 
   const value = {
     vulnerabilities,
     leaderboard,
     scoreTimeline,
+    filteredVulnerabilities,
+    filteredLeaderboard,
+    filteredScoreTimeline,
     loading,
     refreshing,
     error,
     lastUpdated,
     newAwards,
+    selectedPeriod,
+    periodOptions: Object.entries(PERIODS).map(([value, meta]) => ({ value, label: meta.label })),
+    setSelectedPeriod,
     manualRefresh: () => refresh(false),
   };
 
