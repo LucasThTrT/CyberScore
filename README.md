@@ -77,25 +77,30 @@ Proxy endpoint:
 POST /api/notion
 ```
 
-## GitHub Pages Deployment (Frontend)
+## GitHub Pages Deployment (Frontend with GitHub Actions)
 
-1. In `package.json`, set:
-- `homepage`: `https://YOUR_GITHUB_USERNAME.github.io/CyberScore`
-- `predeploy`: `npm run build`
-- `deploy`: `gh-pages -d dist`
+This repo includes:
+- `.github/workflows/deploy-pages.yml`
+- dynamic Vite base path from repository name
 
-2. In `vite.config.js`, set:
-- `base: '/CyberScore/'`
+1. Push your changes to `main`.
 
-3. Deploy:
-
-```bash
-npm run deploy
-```
-
-4. In GitHub repo settings:
+2. In GitHub repo settings:
 - Go to `Settings > Pages`
-- Source should be the `gh-pages` branch
+- Under `Build and deployment`, set `Source` to `GitHub Actions`
+
+3. In GitHub repo settings, set frontend backend URL:
+- Go to `Settings > Secrets and variables > Actions > Variables`
+- Add `VITE_API_URL` with your backend URL (example: `https://your-backend.up.railway.app`)
+
+4. Check deployment:
+- Go to `Actions` tab
+- Run `Deploy Frontend to GitHub Pages` (or wait for push trigger)
+- Open the URL from the `github-pages` environment
+
+Notes:
+- `vite.config.js` uses `VITE_BASE_PATH` and automatically resolves `/${repo-name}/` in GitHub Actions.
+- Frontend routing uses `HashRouter`, so deep links work on GitHub Pages.
 
 ## Railway Deployment (Backend)
 
@@ -108,12 +113,7 @@ npm run deploy
 - `PORT` (optional, Railway sets this automatically)
 - `ALLOWED_ORIGINS` (recommended)
 5. Deploy and copy the backend URL.
-6. Set frontend `VITE_API_URL` to that backend URL and redeploy frontend:
-
-```bash
-VITE_API_URL=https://your-backend.up.railway.app
-npm run deploy
-```
+6. Set GitHub Actions variable `VITE_API_URL` to that backend URL, then push to `main` to trigger a new deploy.
 
 ## Render / Fly.io Backend Notes
 
