@@ -1,0 +1,125 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color-scheme: dark;
+  --c1: #00f5ff;
+  --c2: #8a2bff;
+  --c3: #ff2bbf;
+  --c4: #ff9d2b;
+  --c5: #00f5b0;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #06070d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ── Keyframes ───────────────────────────── */
+
+@keyframes top-rank-spin-cw {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes top-rank-shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+/* ══════════════════════════════════════════
+   CARD
+══════════════════════════════════════════ */
+
+.top-rank-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.7rem;
+  isolation: isolate;
+  box-shadow: 0 0 20px rgba(0, 245, 255, 0.12);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.top-rank-card:hover {
+  transform: scale(1.01);
+}
+
+.top-rank-card:active {
+  transform: scale(0.99);
+}
+
+.top-rank-card::before {
+  content: '';
+  position: absolute;
+  inset: -130%;
+  background: conic-gradient(
+    from 90deg,
+    var(--c1),
+    var(--c2),
+    var(--c3),
+    var(--c4),
+    var(--c5),
+    var(--c1)
+  );
+  /* animation: top-rank-spin-cw 4.8s linear infinite; */
+  z-index: -1;
+}
+
+/* ── Surface ─────────────────────────────── */
+
+.top-rank-surface {
+  position: relative;
+  margin: 1px;
+  border-radius: calc(0.7rem - 1px);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(0, 245, 255, 0.14) 0%,
+      rgba(138, 43, 255, 0.11) 52%,
+      rgba(255, 43, 191, 0.12) 100%
+    ),
+    rgba(11, 16, 32, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+/* Reflet coin haut-gauche */
+.top-rank-surface::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.08), transparent 40%);
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+/* Shimmer continu */
+.top-rank-surface::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow:
+    inset 0  1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+  background: linear-gradient(
+    105deg,
+    transparent                 0%,
+    rgba(255, 255, 255, 0)     35%,
+    rgba(255, 255, 255, 0.08)  50%,
+    rgba(255, 255, 255, 0)     65%,
+    transparent                100%
+  );
+  background-size: 200% 100%;
+  pointer-events: none;
+  animation: top-rank-shimmer 3.5s ease-in-out infinite;
+}
