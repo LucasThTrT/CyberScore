@@ -1,142 +1,134 @@
-# CyberScore
+# CyberScore Deployment Guide (GitHub Pages + Railway)
 
-CyberScore is a React + Vite dashboard deployed on GitHub Pages, backed by a minimal Node.js proxy that securely fetches data from Notion.
+This setup fixes the common issues:
+- Railway: `Not Found` / `train has not arrived at the station`
+- Frontend network/proxy failures
+- CORS/PORT/start command mismatch
 
-## Architecture
+## 1) Backend Files (Railway-ready)
 
-- Frontend: React + Vite + Tailwind (static build on GitHub Pages)
-- Backend: Express + Axios proxy (`/api/notion`) deployed on Railway / Render / Fly.io
-- Secrets: only stored on backend (`NOTION_API_KEY`, `NOTION_DB_ID`)
+### `server/index.js`
+- Express server
+- Uses `process.env.PORT || 3333`
+- Exposes:
+  - `GET /health`
+  - `POST /api/notion` (Notion database query proxy)
+- CORS accepts:
+  - your explicit `ALLOWED_ORIGINS`
+  - `*.github.io`
+  - localhost
 
-## Frontend Setup
+### `server/package.json`
+- Start command: `node index.js`
 
-1. Install dependencies:
+## 2) Railway Deployment (critical settings)
+
+1. Push repo to GitHub.
+2. Create a Railway project from this repo.
+3. In Railway service settings:
+- **Root Directory**: `server`
+- **Start Command**: `npm start`
+- (Build command default is fine; Railway installs deps from `server/package.json`)
+
+4. Add Railway environment variables:
+- `NOTION_API_KEY=...`
+- `NOTION_DB_ID=...`
+- `ALLOWED_ORIGINS=https://YOUR_GITHUB_USERNAME.github.io`
+- `PORT` is optional (Railway injects it automatically)
+
+5. Deploy and open logs.
+
+Expected success log:
+- `[BOOT] CyberScore Notion proxy listening on <port>`
+
+## 3) Backend Health / Endpoint Checks
+
+After Railway deploy, verify:
+
+1. Health:
+- `https://YOUR_RAILWAY_DOMAIN/health`
+- Must return JSON with `ok: true`
+
+2. Notion proxy:
 
 ```bash
+curl -X POST https://YOUR_RAILWAY_DOMAIN/api/notion \
+  -H "Content-Type: application/json" \
+  -d '{"page_size":1}'
+```
+
+If it fails:
+- `401` => bad `NOTION_API_KEY`
+- `404` => bad `NOTION_DB_ID` or integration not shared with DB
+- `403` => CORS blocked origin or Notion access issue
+
+## 4) Frontend Environment
+
+Use root `.env`:
+
+```bash
+VITE_API_URL=https://YOUR_RAILWAY_DOMAIN
+```
+
+Template is provided in `.env.example`.
+
+## 5) Frontend Rebuild + Redeploy to GitHub Pages
+
+1. Ensure Pages settings:
+- `Settings > Pages > Source = GitHub Actions`
+
+2. Ensure Actions variable exists:
+- `Settings > Secrets and variables > Actions > Variables`
+- `VITE_API_URL=https://YOUR_RAILWAY_DOMAIN`
+
+3. Trigger deploy:
+- Push to `main` (or run workflow manually)
+- Workflow: `.github/workflows/deploy-pages.yml`
+
+## 6) Logs Troubleshooting
+
+### Railway logs
+Check for:
+- Boot log present
+- No crash on startup
+- Incoming `/api/notion` requests
+
+If you see `Not Found / train has not arrived`:
+- Root Directory is wrong (must be `server`)
+- Start command is wrong (must be `npm start`)
+- No successful deploy yet
+
+### Browser devtools (frontend)
+- Open Network tab
+- Confirm calls go to: `https://YOUR_RAILWAY_DOMAIN/api/notion`
+- Confirm response is not blocked by CORS
+
+## 7) Final Checklist
+
+- [ ] Railway Root Directory = `server`
+- [ ] Railway Start Command = `npm start`
+- [ ] Railway env vars set: `NOTION_API_KEY`, `NOTION_DB_ID`, optional `ALLOWED_ORIGINS`
+- [ ] `https://YOUR_RAILWAY_DOMAIN/health` returns `ok: true`
+- [ ] `POST /api/notion` works from curl
+- [ ] Frontend `.env` has `VITE_API_URL=https://YOUR_RAILWAY_DOMAIN`
+- [ ] GitHub Actions Pages deploy succeeded
+- [ ] Frontend network requests target Railway and return data
+
+## Local run (optional)
+
+Backend:
+
+```bash
+cd server
 npm install
-```
-
-2. Create frontend env file:
-
-```bash
 cp .env.example .env
-```
-
-3. Set backend URL:
-
-```bash
-VITE_API_URL=http://localhost:3333
-```
-
-4. Run frontend locally:
-
-```bash
-npm run dev
-```
-
-## Backend Setup
-
-1. Install backend dependencies:
-
-```bash
-cd backend
-npm install
-```
-
-2. Create backend env file:
-
-```bash
-cp .env.example .env
-```
-
-3. Configure backend secrets:
-
-```bash
-PORT=3333
-NOTION_API_KEY=secret_xxx
-NOTION_DB_ID=your_notion_database_id
-# Optional lock-down
-# ALLOWED_ORIGINS=https://YOUR_GITHUB_USERNAME.github.io
-```
-
-4. Start backend:
-
-```bash
 npm start
 ```
 
-Health check:
+Frontend:
 
 ```bash
-GET /health
+npm install
+cp .env.example .env
+npm run dev
 ```
-
-Proxy endpoint:
-
-```bash
-POST /api/notion
-```
-
-## GitHub Pages Deployment (Frontend with GitHub Actions)
-
-This repo includes:
-- `.github/workflows/deploy-pages.yml`
-- dynamic Vite base path from repository name
-
-1. Push your changes to `main`.
-
-2. In GitHub repo settings:
-- Go to `Settings > Pages`
-- Under `Build and deployment`, set `Source` to `GitHub Actions`
-
-3. In GitHub repo settings, set frontend backend URL:
-- Go to `Settings > Secrets and variables > Actions > Variables`
-- Add `VITE_API_URL` with your backend URL (example: `https://your-backend.up.railway.app`)
-
-4. Check deployment:
-- Go to `Actions` tab
-- Run `Deploy Frontend to GitHub Pages` (or wait for push trigger)
-- Open the URL from the `github-pages` environment
-
-Notes:
-- `vite.config.js` uses `VITE_BASE_PATH` and automatically resolves `/${repo-name}/` in GitHub Actions.
-- Frontend routing uses `HashRouter`, so deep links work on GitHub Pages.
-
-## Railway Deployment (Backend)
-
-1. Push this repository to GitHub.
-2. Create a new Railway project from the repo.
-3. Set service root directory to `backend`.
-4. Add env vars in Railway:
-- `NOTION_API_KEY`
-- `NOTION_DB_ID`
-- `PORT` (optional, Railway sets this automatically)
-- `ALLOWED_ORIGINS` (recommended)
-5. Deploy and copy the backend URL.
-6. Set GitHub Actions variable `VITE_API_URL` to that backend URL, then push to `main` to trigger a new deploy.
-
-## Render / Fly.io Backend Notes
-
-- Root/service directory: `backend`
-- Build/install command: `npm install`
-- Start command: `npm start`
-- Required env vars:
-  - `NOTION_API_KEY`
-  - `NOTION_DB_ID`
-  - `PORT` (platform usually injects this)
-  - `ALLOWED_ORIGINS` (recommended)
-- After deploy, set frontend `VITE_API_URL` to the backend public URL and redeploy GitHub Pages.
-
-## Security Notes
-
-- Never expose Notion API key in frontend `VITE_*` variables.
-- Keep all Notion credentials only in backend env.
-- Restrict CORS via `ALLOWED_ORIGINS` in production.
-
-## Notion Schema Used
-
-- `Name`
-- `Vulnerability type`
-- `Discovery date`
-- `Severity level` (`Low`, `Medium`, `High`)
-- `Found by`
