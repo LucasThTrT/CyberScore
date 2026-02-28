@@ -1,57 +1,14 @@
-# Cyberpunk Pentester Leaderboard
+# CyberScore
 
-A React + Vite + TailwindCSS dashboard for pentester rankings and vulnerability tracking, with a dark cyberpunk UI, motion effects, and score analytics.
+CyberScore is a React + Vite dashboard deployed on GitHub Pages, backed by a minimal Node.js proxy that securely fetches data from Notion.
 
-## Stack
+## Architecture
 
-- React + Vite
-- TailwindCSS
-- Framer Motion
-- Recharts
-- Axios
-- dotenv-compatible `.env` variables (`VITE_*`)
+- Frontend: React + Vite + Tailwind (static build on GitHub Pages)
+- Backend: Express + Axios proxy (`/api/notion`) deployed on Railway / Render / Fly.io
+- Secrets: only stored on backend (`NOTION_API_KEY`, `NOTION_DB_ID`)
 
-## Features
-
-- Leaderboard page (`/`)
-  - Neon animated ranking bars with dynamic scores
-  - Live vulnerability feed cards with severity badges and glow/shake effect for newest entries
-  - Manual refresh button + auto refresh every minute
-- Score evolution page (`/stats`)
-  - Multi-line cumulative score chart (one line per pentester)
-  - Neon dark chart theme
-  - Shared period filter (`2 semaines`, `1 mois`, `2 mois`, `6 mois`, `1 an`) persisted across pages
-- Reusable components
-  - `src/components/LeaderboardBar.jsx`
-  - `src/components/VulnerabilityCard.jsx`
-  - `src/components/NeonCard.jsx`
-  - `src/components/StatsChart.jsx`
-- Clean architecture
-  - `src/pages/`
-  - `src/components/`
-  - `src/services/notion.js`
-  - `src/hooks/useVulnerabilities.jsx`
-  - `src/utils/`
-
-## Notion Schema
-
-This app expects vulnerabilities in a Notion database and reads these properties:
-
-- `Name` (title of vulnerability card)
-- `Vulnerability type` (select/options text)
-- `Discovery date` (date)
-- `Severity level` (`Low`, `Medium`, `High`)
-- `Found by` (pentester name / people field)
-
-## Score Logic
-
-- `low = 100`
-- `medium = 200`
-- `high = 500`
-
-Scores are calculated on the frontend from vulnerabilities grouped by pentester.
-
-## Setup
+## Frontend Setup
 
 1. Install dependencies:
 
@@ -59,36 +16,127 @@ Scores are calculated on the frontend from vulnerabilities grouped by pentester.
 npm install
 ```
 
-2. Create `.env` from the example and set your Notion credentials:
+2. Create frontend env file:
 
 ```bash
 cp .env.example .env
 ```
 
-`.env`:
+3. Set backend URL:
 
 ```bash
-VITE_NOTION_API_KEY=your_notion_integration_secret
-VITE_NOTION_DB_ID=your_database_id
+VITE_API_URL=http://localhost:3333
 ```
 
-3. Run development server:
+4. Run frontend locally:
 
 ```bash
 npm run dev
 ```
 
-4. Build for production:
+## Backend Setup
+
+1. Install backend dependencies:
 
 ```bash
-npm run build
-npm run preview
+cd backend
+npm install
 ```
 
-## Notes
+2. Create backend env file:
 
-- The refresh interval is 1 minute and can be adjusted in `src/hooks/useVulnerabilities.jsx`.
-- In development, Notion calls go through the Vite proxy (`/api/notion`) to avoid browser CORS errors.
-- For production, use a backend/API route proxy (or serverless function) with the same pattern, otherwise direct browser calls to Notion can fail and expose secrets.
-- Ensure your Notion integration has access to the target database.
-- If property names differ, update `src/services/notion.js` mapping.
+```bash
+cp .env.example .env
+```
+
+3. Configure backend secrets:
+
+```bash
+PORT=3333
+NOTION_API_KEY=secret_xxx
+NOTION_DB_ID=your_notion_database_id
+# Optional lock-down
+# ALLOWED_ORIGINS=https://YOUR_GITHUB_USERNAME.github.io
+```
+
+4. Start backend:
+
+```bash
+npm start
+```
+
+Health check:
+
+```bash
+GET /health
+```
+
+Proxy endpoint:
+
+```bash
+POST /api/notion
+```
+
+## GitHub Pages Deployment (Frontend)
+
+1. In `package.json`, set:
+- `homepage`: `https://YOUR_GITHUB_USERNAME.github.io/CyberScore`
+- `predeploy`: `npm run build`
+- `deploy`: `gh-pages -d dist`
+
+2. In `vite.config.js`, set:
+- `base: '/CyberScore/'`
+
+3. Deploy:
+
+```bash
+npm run deploy
+```
+
+4. In GitHub repo settings:
+- Go to `Settings > Pages`
+- Source should be the `gh-pages` branch
+
+## Railway Deployment (Backend)
+
+1. Push this repository to GitHub.
+2. Create a new Railway project from the repo.
+3. Set service root directory to `backend`.
+4. Add env vars in Railway:
+- `NOTION_API_KEY`
+- `NOTION_DB_ID`
+- `PORT` (optional, Railway sets this automatically)
+- `ALLOWED_ORIGINS` (recommended)
+5. Deploy and copy the backend URL.
+6. Set frontend `VITE_API_URL` to that backend URL and redeploy frontend:
+
+```bash
+VITE_API_URL=https://your-backend.up.railway.app
+npm run deploy
+```
+
+## Render / Fly.io Backend Notes
+
+- Root/service directory: `backend`
+- Build/install command: `npm install`
+- Start command: `npm start`
+- Required env vars:
+  - `NOTION_API_KEY`
+  - `NOTION_DB_ID`
+  - `PORT` (platform usually injects this)
+  - `ALLOWED_ORIGINS` (recommended)
+- After deploy, set frontend `VITE_API_URL` to the backend public URL and redeploy GitHub Pages.
+
+## Security Notes
+
+- Never expose Notion API key in frontend `VITE_*` variables.
+- Keep all Notion credentials only in backend env.
+- Restrict CORS via `ALLOWED_ORIGINS` in production.
+
+## Notion Schema Used
+
+- `Name`
+- `Vulnerability type`
+- `Discovery date`
+- `Severity level` (`Low`, `Medium`, `High`)
+- `Found by`

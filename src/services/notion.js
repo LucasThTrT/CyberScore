@@ -1,11 +1,6 @@
 import axios from 'axios';
 
-const notionClient = axios.create({
-  baseURL: '/api/notion',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3333';
 
 const safeText = (prop) => {
   if (!prop) return '';
@@ -45,31 +40,27 @@ const pickProperty = (properties, names) => {
 
 function toReadableError(error) {
   if (error.response?.status === 401) {
-    return 'Notion auth failed (401). Check VITE_NOTION_API_KEY.';
+    return 'Notion auth failed (401). Check backend NOTION_API_KEY.';
   }
   if (error.response?.status === 404) {
-    return 'Notion database not found (404). Check VITE_NOTION_DB_ID and integration access.';
+    return 'Notion database not found (404). Check backend NOTION_DB_ID and integration access.';
   }
   if (error.response?.status === 403) {
     return 'Notion access forbidden (403). Share the database with your integration.';
   }
   if (error.response) {
-    return `Notion API error (${error.response.status}).`;
+    return `Notion proxy error (${error.response.status}).`;
   }
-  return 'Network/proxy error while reaching Notion API.';
+  return 'Network/proxy error while reaching backend API.';
 }
 
 export async function fetchVulnerabilities() {
-  if (!import.meta.env.VITE_NOTION_API_KEY || !import.meta.env.VITE_NOTION_DB_ID) {
-    throw new Error('Missing VITE_NOTION_API_KEY or VITE_NOTION_DB_ID in environment variables.');
-  }
-
   try {
-    const response = await notionClient.post(`/databases/${import.meta.env.VITE_NOTION_DB_ID}/query`, {
+    const response = await axios.post(`${API_URL}/api/notion`, {
       page_size: 100,
     });
 
-    return response.data.results
+    return (response.data?.results || [])
       .map((record) => {
         const properties = record.properties || {};
         const severityRaw = safeText(

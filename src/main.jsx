@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import App from './App';
 import { VulnerabilitiesProvider } from './hooks/useVulnerabilities';
 import './styles/index.css';
@@ -8,9 +8,9 @@ import './styles/index.css';
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <VulnerabilitiesProvider>
-      <BrowserRouter>
+      <HashRouter>
         <App />
-      </BrowserRouter>
+      </HashRouter>
     </VulnerabilitiesProvider>
   </React.StrictMode>
 );
