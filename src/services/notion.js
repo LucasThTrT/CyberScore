@@ -25,15 +25,8 @@ const safeDate = (prop) => {
   return '';
 };
 
-const safeLogo = (prop) => {
-  if (!prop) return '';
-  if (prop.type === 'url') return prop.url || '';
-  if (prop.type === 'files') return prop.files?.[0]?.file?.url || prop.files?.[0]?.external?.url || '';
-  return '';
-};
-
 const pickPentester = (properties) => {
-  const candidates = ['pentester', 'researcher', 'owner', 'assigned_to'];
+  const candidates = ['Found by', 'found by', 'found_by', 'pentester', 'researcher', 'owner', 'assigned_to'];
   for (const key of candidates) {
     if (properties[key]) {
       const value = safeText(properties[key]);
@@ -79,14 +72,28 @@ export async function fetchVulnerabilities() {
     return response.data.results
       .map((record) => {
         const properties = record.properties || {};
-        const severityRaw = safeText(pickProperty(properties, ['severity', 'Severity'])).toLowerCase();
+        const severityRaw = safeText(
+          pickProperty(properties, ['Severity level', 'severity level', 'Severity', 'severity'])
+        ).toLowerCase();
+        const vulnerabilityType =
+          safeText(
+            pickProperty(properties, [
+              'Vulnerability type',
+              'vulnerability type',
+              'Vulnerability Type',
+              'type',
+              'Type',
+            ])
+          ) || 'General';
+
         return {
           id: record.id,
-          title: safeText(pickProperty(properties, ['title', 'Title', 'name', 'Name'])) || 'Untitled Vulnerability',
+          title: safeText(pickProperty(properties, ['Name', 'name', 'title', 'Title'])) || 'Untitled Vulnerability',
+          vulnerabilityType,
           severity: ['low', 'medium', 'high'].includes(severityRaw) ? severityRaw : 'low',
-          date: safeDate(pickProperty(properties, ['date', 'Date'])) || record.last_edited_time,
-          client: safeText(pickProperty(properties, ['client', 'Client'])) || 'Unknown Client',
-          clientLogoUrl: safeLogo(pickProperty(properties, ['client_logo_url', 'Client Logo', 'client_logo'])) || '',
+          date:
+            safeDate(pickProperty(properties, ['Discovery date', 'discovery date', 'Discovery Date', 'date', 'Date'])) ||
+            record.last_edited_time,
           pentester: pickPentester(properties),
         };
       })
