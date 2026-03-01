@@ -64,7 +64,7 @@ export async function fetchVulnerabilities() {
       .map((record) => {
         const properties = record.properties || {};
         const severityRaw = safeText(
-          pickProperty(properties, ['Severity level', 'severity level', 'Severity', 'severity'])
+          pickProperty(properties, ['Severity Level', 'severity level', 'Severity', 'severity'])
         ).toLowerCase();
         const vulnerabilityType =
           safeText(
