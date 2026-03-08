@@ -24,7 +24,7 @@ export default function App() {
           className="mb-8 flex items-center justify-between gap-3 shrink-0"
         >
           <h1 className="text-xl md:text-3xl font-black tracking-[0.3em] uppercase text-cyber-cyan drop-shadow-[0_0_12px_rgba(0,245,255,0.9)]">
-            Pentester Nexus
+            Escape hacker team
           </h1>
           <nav className="flex gap-2 bg-cyber-panel/40 border border-white/10 rounded-lg p-1 backdrop-blur-xs">
             <NavLink to="/" className={navClass} end>
