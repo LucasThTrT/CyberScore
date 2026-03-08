@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
-    "server:start": "npm --prefix server start"
+    "server:start": "npm --prefix server start",
+    "local:sync": "bash scripts/apply-local-config.sh"
   },
   "dependencies": {
     "axios": "^1.8.2",

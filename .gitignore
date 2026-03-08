@@ -5,4 +5,5 @@ dist
 .env
 server/.env
 backend/.env
+local.credentials.env
 .DS_Store

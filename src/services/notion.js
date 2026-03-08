@@ -39,6 +39,12 @@ const pickProperty = (properties, names) => {
 };
 
 function toReadableError(error) {
+  const backendMessage =
+    error.response?.data?.message ||
+    error.response?.data?.notion_error;
+  if (backendMessage) {
+    return backendMessage;
+  }
   if (error.response?.status === 401) {
     return 'Notion auth failed (401). Check backend NOTION_API_KEY.';
   }
